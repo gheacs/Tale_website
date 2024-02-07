@@ -8,7 +8,7 @@ from gtts import gTTS
 app = Flask(__name__)
 
 # Initialize OpenAI client
-openai_api_key = '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'
+openai_api_key = ''
 openai_client = OpenAI(api_key=openai_api_key)
 
 # Initialize Speech Recognition
