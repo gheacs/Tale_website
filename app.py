@@ -19,7 +19,7 @@ processing_lock = threading.Lock()  # Ensures thread-safe operations on the accu
 app = Flask(__name__)
 
 # Initialize OpenAI client
-openai.api_key = "<APIKEY>"
+openai.api_key = "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"
 
 
 """
@@ -127,15 +127,14 @@ def record():
 
     try:
         # Transcribe the audio chunk
-        transcribed_text = transcribe_audio(temp_path)
+        transcribed_text = process_transcription_chunk(temp_path)
+        detected_patterns = detect_stutter_patterns(transcribed_text)  # Detect stutter patterns
 
-        # Process the transcription for stutter detection
-        with processing_lock:
-            detected_patterns = detect_stutter_patterns(transcribed_text)
-            transcription_accumulator.append(transcribed_text)
-
-        # Cleanup the temporary file
-        os.remove(temp_path)
+        suggestion_response = "No stutter detected."
+        if any(detected_patterns.values()):  # If any stutter patterns are detected
+            suggestion_response = get_completion(transcribed_text)  # Get completion for stuttered text
+        
+        os.remove(temp_path)  # Cleanup the temporary file
 
         # Respond with the transcription and any detected stutter patterns
         return jsonify({
