@@ -19,7 +19,7 @@ processing_lock = threading.Lock()  # Ensures thread-safe operations on the accu
 app = Flask(__name__)
 
 # Initialize OpenAI client
-openai.api_key = "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"
+openai.api_key = "<APIKEY>"
 
 
 """
