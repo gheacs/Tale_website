@@ -149,27 +149,40 @@
 
                     mediaRecorder.addEventListener("stop", () => {
                         // Handle what happens once recording is stopped if needed
-                        stopRecording();
+                        // Only create and send the blob if there's enough data
+                        if (audioChunks.length > 0 && audioChunks[0].size > 1000) { // The size check here is arbitrary, adjust based on typical chunk sizes you see
+                            const audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
+                            uploadAudio(audioBlob);
+                        } else {
+                            console.error("Not enough audio data to send a file.");
+                        }
+                        audioChunks = [];
                     });
                 })
                 .catch(console.error);
         }
 
         function uploadAudio(audioBlob) {
+            // Check if the audioBlob has enough data
+            if (audioBlob.size <= 1000) { // You can adjust the size check as needed
+                console.error("Not enough audio data to send a file.");
+                return; // Exit the function if blob size is too small
+            }
+
             const formData = new FormData();
             formData.append("audio-file", audioBlob, "chunk.wav"); // Use a generic name as it's a chunk
 
             fetch("/record", { method: "POST", body: formData }) // Make sure this endpoint is set up in Flask to handle chunked uploads
                 .then(response => response.json())
                 .then(data => {
-                    // Assuming 'data' contains 'transcription' and 'suggestion' keys
-                    if (data.transcription) {
-                        console.log("Transcription:", data.transcription); 
-                        document.getElementById('transcribed-text').textContent = "You said: " + data.transcription;
+                    // Check if the response contains an error due to insufficient data
+                    if (data.error && data.error.includes("No audio file provided")) {
+                        console.error("No enough data to process."); // Log error to console and do not update the UI
                     }
-                    if (data.suggestion) {
-                        console.log("AI suggestion:", data.suggestion);
-                        document.getElementById('suggestion-text').textContent = "AI suggestion: " + data.suggestion;
+                    else {
+                        // Update the UI with transcription and suggestion
+                        document.getElementById('transcribed-text').textContent = "You said: " + (data.transcription || "");
+                        document.getElementById('suggestion-text').textContent = "AI suggestion: " + (data.suggestion || "");
                     }
                 })
                 .catch(error => console.error("Error uploading audio chunk:", error));
